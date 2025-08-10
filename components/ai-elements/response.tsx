@@ -1,15 +1,15 @@
 'use client';
 
-import { CodeBlock, CodeBlockCopyButton } from './code-block';
+import { cn } from "@/lib/utils";
+import hardenReactMarkdown from "harden-react-markdown";
+import "katex/dist/katex.min.css";
 import type { ComponentProps, HTMLAttributes } from 'react';
 import { memo } from 'react';
 import ReactMarkdown, { type Options } from 'react-markdown';
 import rehypeKatex from 'rehype-katex';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
-import { cn } from '@/lib/utils';
-import 'katex/dist/katex.min.css';
-import hardenReactMarkdown from 'harden-react-markdown';
+import { CodeBlock, CodeBlockCopyButton } from "./code-block";
 
 /**
  * Parses markdown text and removes incomplete tokens to prevent partial rendering
@@ -275,44 +275,48 @@ const components: Options['components'] = {
   },
 };
 
-export const Response = memo(
-  ({
-    className,
-    options,
-    children,
-    allowedImagePrefixes,
-    allowedLinkPrefixes,
-    defaultOrigin,
-    parseIncompleteMarkdown: shouldParseIncompleteMarkdown = true,
-    ...props
-  }: ResponseProps) => {
-    // Parse the children to remove incomplete markdown tokens if enabled
-    const parsedChildren =
-      typeof children === 'string' && shouldParseIncompleteMarkdown
-        ? parseIncompleteMarkdown(children)
-        : children;
+const ResponseComponent = ({
+  className,
+  options,
+  children,
+  allowedImagePrefixes,
+  allowedLinkPrefixes,
+  defaultOrigin,
+  parseIncompleteMarkdown: shouldParseIncompleteMarkdown = true,
+  ...props
+}: ResponseProps) => {
+  // Parse the children to remove incomplete markdown tokens if enabled
+  const parsedChildren =
+    typeof children === "string" && shouldParseIncompleteMarkdown
+      ? parseIncompleteMarkdown(children)
+      : children;
 
-    return (
-      <div
-        className={cn(
-          'size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0',
-          className,
-        )}
-        {...props}
+  return (
+    <div
+      className={cn(
+        "size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
+        className
+      )}
+      {...props}
+    >
+      <HardenedMarkdown
+        components={components}
+        rehypePlugins={[rehypeKatex]}
+        remarkPlugins={[remarkGfm, remarkMath]}
+        allowedImagePrefixes={allowedImagePrefixes ?? ["*"]}
+        allowedLinkPrefixes={allowedLinkPrefixes ?? ["*"]}
+        defaultOrigin={defaultOrigin}
+        {...options}
       >
-        <HardenedMarkdown
-          components={components}
-          rehypePlugins={[rehypeKatex]}
-          remarkPlugins={[remarkGfm, remarkMath]}
-          allowedImagePrefixes={allowedImagePrefixes ?? ['*']}
-          allowedLinkPrefixes={allowedLinkPrefixes ?? ['*']}
-          defaultOrigin={defaultOrigin}
-          {...options}
-        >
-          {parsedChildren}
-        </HardenedMarkdown>
-      </div>
-    );
-  },
-  (prevProps, nextProps) => prevProps.children === nextProps.children,
+        {parsedChildren}
+      </HardenedMarkdown>
+    </div>
+  );
+};
+
+ResponseComponent.displayName = "Response";
+
+export const Response = memo(
+  ResponseComponent,
+  (prevProps, nextProps) => prevProps.children === nextProps.children
 );
